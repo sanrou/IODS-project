@@ -1,0 +1,11 @@
+---
+title: "README"
+author: "Santeri Rouhinen"
+output: html_document
+---
+
+## Description
+Introduction to Open Data Science is a course held in 2017 for the second time. It promices to give all the skills to call themselves data scientists. **Bold**. Seems also like there is some repeat in the exercises in the course.
+
+## Personal github repository link to the IODS-project
+[link](https://github.com/sanrou/IODS-project)
