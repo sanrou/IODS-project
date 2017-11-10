@@ -140,34 +140,12 @@ $(document).ready(function () {
 
 <div id="TOC">
 <ul>
-<li><a href="#about-the-project">About the project</a></li>
-<li><a href="#chapter-1">Chapter 1</a><ul>
-<li><a href="#description">Description</a></li>
-<li><a href="#personal-github-repository-link-to-the-iods-project">Personal github repository link to the IODS-project</a></li>
-</ul></li>
 <li><a href="#regression-and-model-validation">Regression and model validation</a><ul>
 <li><a href="#analysis-part">Analysis part</a></li>
 </ul></li>
 </ul>
 </div>
 
-<hr />
-<div id="about-the-project" class="section level1">
-<h1>About the project</h1>
-<p><em>Write a short description about the course and add a link to your github repository here. This is an R markdown (.Rmd) file so you can use R markdown syntax. See the ‘Useful links’ page in the mooc area (chapter 1) for instructions.</em></p>
-</div>
-<div id="chapter-1" class="section level1">
-<h1>Chapter 1</h1>
-<div id="description" class="section level2">
-<h2>Description</h2>
-<p>Introduction to Open Data Science is a course held in 2017 for the second time. It promices to give all the skills to call themselves data scientists. <strong>Bold</strong>.</p>
-</div>
-<div id="personal-github-repository-link-to-the-iods-project" class="section level2">
-<h2>Personal github repository link to the IODS-project</h2>
-<p><a href="https://github.com/sanrou/IODS-project">link</a></p>
-<hr />
-</div>
-</div>
 <div id="regression-and-model-validation" class="section level1">
 <h1>Regression and model validation</h1>
 <p><em>Describe the work you have done this week and summarize your learning.</em></p>
@@ -280,7 +258,7 @@ pp</code></pre>
 </div>
 <div id="section-2" class="section level3">
 <h3>3.</h3>
-<p>Explore how well different student attributes predict their exam points.</p>
+<p>Explore how well do different student attributes predict their exam points.</p>
 <pre class="r"><code>## Perform an explanatory model with a regression model. Choose three variables. Drop non-significant ones and redo.
 # Do a linear model.
 lModel &lt;- lm(points ~ attitude + stra + surf, data = learning2014)
@@ -390,7 +368,6 @@ plot(lModel, which = c(1,2,5))</code></pre>
 <p>Q-Q plot is used to measure whether errors are normally distributed. If points follow the line then normality can be presumed. Q-Q plot seems reasonably near the assumption of normal error distribution.</p>
 <p>Residuals vs Leverage plot is used to check for outlier observations. If there are observations with particularly high leverage one should consider removing them from the analysis. Leverage plot seems like there is no outlier observation (so no very high leverage observations).</p>
 <p>All in all the model seems reasonable.</p>
-<hr />
 </div>
 </div>
 </div>
