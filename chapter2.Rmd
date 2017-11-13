@@ -132,7 +132,7 @@ lm_eqn = function(m) {
   as.character(as.expression(eq));                 
 }
 
-p5 = p4 + annotate("text", x = 2, y = 32, label = lm_eqn(lModel), colour="black", size = 5, parse=TRUE)
+p5 = p4 + annotate("text", x = 2.1, y = 34, label = lm_eqn(lModel), colour="black", size = 5, parse=TRUE)
 p5
 
 ```
