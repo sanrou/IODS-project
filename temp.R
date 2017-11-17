@@ -1,121 +1,64 @@
-# Temp to be moved to chapter2.Rmd.
+# Temp to be moved to chapter3.Rmd.
 
-# Read data from a local comma separated values file. 
-learning2014 <- read.csv("data/learning2014.csv")
-
-# Get dimensions of the data (166 students and 8 observations). Get structure.
-dim(learning2014)
-str(learning2014)
-
-# The dataset has been collapsed from a dataset measured by Kimmo Vehkalahti. 
-# Deep, stra and surf refer to deep, strategic and surface learning values normalized to 1-5.
-
-
-# Show a graphical overview of the data and show summaries of the variables in the data. X is the numeric order of the students.
+# Load required libraries
 library(ggplot2)
-library(GGally)
-
-# Text table of the dataset
-summary(learning2014)
-
-# initialize plot with data and aesthetic mapping
-p1 <- ggplot(learning2014, aes(x = attitude, y = points))
-
-# define the visualization type (points)
-p2 <- p1 + geom_point()
-
-# add a regression line
-p3 <- p2 + geom_smooth(method = "lm")
-
-# add a main title and draw the plot
-p4 <- p3 + ggtitle("Student's attitude versus exam points")
-
-# add equation and r-squared to the graph after linear model has been done.
 
 
-# create a more advanced plot matrix with ggpairs()
-pp <- ggpairs(learning2014[-1], mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+# Load data from .csv
+alc <- read.csv("data/student-alc.csv")
 
-# draw the plot
-pp
+# Description of the data from the authors (truncated):
+# This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). In [Cortez and Silva, 2008], the two datasets were modeled under binary/five-level classification and regression tasks. G3 is the final year grade (issued at the 3rd period), while G1 and G2 correspond to the 1st and 2nd period grades. 
 
-shapiro.test(learning2014$deep)
-shapiro.test(learning2014$stra)
-shapiro.test(learning2014$surf)
-shapiro.test(learning2014$points)
+# Link to the data and fuller description: https://archive.ics.uci.edu/ml/datasets/Student+Performance
 
-
-# Description of the data: There are more females than males. Mean age of the students is 25.5 years and ranges from 17-55.
-# Mean attitude is 3.1. Strategy attributes look like they are roughly normally distributed. However that is not the case for deep and points.
-# The normality test was done with Shapiro-Wilks normality test. If it gives p<0.05 then usually normality is not expected to hold.
-# Most of the attributes do not correlate much. Biggest correlations are with points and deep learning strategy with both genders.
-# Also with males (not females) surface learning had a strong negative correlation with deep learning strategy.
+# Column names
+colnames(alc)
 
 
+## Choose four interesting variables and present hypothesis about their relationship with alcohol consumption. I did not select DataCamp ones as the results are known already, except the final grade as that is an obvious one. 
+# 19 activities - extra-curricular activities (binary: yes or no) 
+# 21 higher - wants to take higher education (binary: yes or no) 
+# 24 famrel - quality of family relationships (numeric: from 1 - very bad to 5 - excellent) 
+# 32 - final grade (numeric: from 0 to 20, output target) 
 
-## Perform an explanatory model with a regression model. Choose three variables. Drop non-significant ones and redo.
-# Do a linear model.
-lModel <- lm(points ~ attitude + stra + surf, data = learning2014)
-summary(lModel)
-
-# Surface learning is not even close to significant. The strategic learning is marginally significant. So drop surf.
-lModel <- lm(points ~ attitude + stra, data = learning2014)
-summary(lModel)
-
-# After dropping surf strategic learning is also p>0.05 so drop that also. Only attitude remains.
-lModel <- lm(points ~ attitude, data = learning2014)
-summary(lModel)
+# 19. I would imagine that activities predicts low alcohol use. Might not, as for example hockey youths in Finland consume a lot of alcohol. Interesting to see if there is any relation to high use. I would guess a marginally significant relation.
+# 21. Those with ambition should have less alcohol use if they are serious. Wanting to take higher education though is easy. Again, interesting to see any relation to high use. I would guess a low but still significant relation.
+# 24. Having poor family relationship I would imagine predicts high alcohol use. I would guess this to have the strongest relation to high alcohol use of my variable selections. 
+# 32. Final grade should have some predictive value, but not very strong. At least as far as I can remember from the DataCamp exercise. This selection is a bit boring.
 
 
-# Add regression formula to the attitude vs points plot.
-# Function to get regression formula.
-lm_eqn = function(m) {
-  
-  l <- list(a = format(coef(m)[1], digits = 2),
-            b = format(abs(coef(m)[2]), digits = 2),
-            r2 = format(summary(m)$r.squared, digits = 3));
-  
-  if (coef(m)[2] >= 0)  {
-    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,l)
-  } else {
-    eq <- substitute(italic(y) == a - b %.% italic(x)*","~~italic(r)^2~"="~r2,l)    
-  }
-  
-  as.character(as.expression(eq));                 
-}
+## Do some exploratory search with the chosen variables and alcohol use. 
+# Draw a bar plot of high_use by activities. Gives graphs divided by activities.
+g1 <- ggplot(alc, aes(x = high_use))
+g1 + geom_bar() + facet_wrap("activities") + ggtitle("Students divided by extra activities (no/yes) to high users (F/T)") + xlab("High alcohol use (False/True)")
 
-p5 = p4 + annotate("text", x = 2, y = 32, label = lm_eqn(lModel), colour="black", size = 5, parse=TRUE)
-p5
+# 19 activities. Looks like there is a small effect of students having extra activities having less heavy alcohol users. The difference between active students and non-activity students is not large.
 
 
-
-# Linear regression can be described with a formula
-# dependent = alpha + beta(explanatoryVariable) + noise
-# One can have more than one explanatory variables. 
-# In this case only attitude remains as a statistically significant explanatory variable.
-# In the current model alpha is 11.6 and beta is 3.5. That is each attitude attribute point is worth 3.5 points in the exam.
-
-# Multiple R-squared value is 0.19. Multiple R-squared is known as R-squared. It tells how well the model fits the data.
-# A value of 1 means the model perfectly predicts data, whereas 0 means there is no predictive value. 
-# The value of 19 % means that roughly 19 percent of the course score in the learning2014 dataset is explained by the attitude rating.
-# It can help to think that R-squared is correlation coefficient x correlation coefficient.
-# If one was using multiple variables using the Adjusted R-squared value would be recommended.
+# Draw a bar plot of high education aspirations and high alcohol use.
+g2 <- ggplot(alc, aes(x = high_use))
+g2 + geom_bar() + facet_wrap("higher") + ggtitle("Students divided by wanting to take higher education (no/yes) to high users (F/T)") + xlab("High alcohol use (False/True)")
 
 
-## Check if model fits well or not. 
-# draw diagnostic plots using the plot() function. Choose the plots 1, 2 and 5.
-# Draw three panels in a single figure.
-par(mfrow = c(1,3))
-# Plot Residuals vs Fitted values (1), Normal QQ-plot (2), and Residuals vs Leverage (5).
-plot(lModel, which = c(1,2,5))
+# 21. Education. There are very few people not wanting to take higher education, so this variable should be very pointless in future analyses.
 
-# Linear regression model assumes linearly distributed data and normally distributed errors. Errors should also have constant variance. 
-# One can display graphs to test how well the model fits the assumption.
-# Residuals vs Fitted plot is used to check if variance is constant or not. If the data points are roughly evenly distributed good, if the data has a clear shape then bad.
-# Residuals vs Fitted is roughly evenly distributed, so the size of errors should not depend on the explanatory variables.
-# Q-Q plot is used to measure whether errors are normally distributed. If points follow the line then normality can be presumed.
-# Q-Q plot seems reasonably near the assumption of normal error distribution.
-# Residuals vs Leverage plot is used to check for outlier observations. If there are observations with particularly high leverage one should consider removing them from the analysis.
-# Leverage plot seems like there is no outlier observation (so no very high leverage observations).
+alc %>% group_by(higher, high_use) %>% summarise(count = n())
+
+# There are only 18 out of the 382 that are not interested in higher education. A bit surprising. High use was 1:1 in those not wanting to take higher education so at least my hypothesis holds, kind of. The n is so small one should not make statistical inferences. The ratio amongst those wanting to take higher education is about 1:3.5, much less than 1:1.
 
 
+# 24. Family relationship. 
+# Do a histogram of relationship levels by high alcohol use.
+g3 <- ggplot(alc, aes(x = high_use))
+g3 + geom_bar() + facet_wrap("famrel") + ggtitle("Students divided by family relationships (1-5) to high users (F/T)") + xlab("High alcohol use (False/True)")
+
+# There seems to be more high alcohol users in those reporting poor family relationships. Fortunately those reporting very low relationships are a minority. Hypothesis stands strong.
+
+
+# 32. Final grade.
+# Do boxplots of high and low alcohol users and their final grades (G3).
+g4 <- ggplot(alc, aes(x = high_use, y = G3))
+g4 + geom_boxplot() + ggtitle("Students' final grades grouped by alcohol use") + xlab("High alcohol use (False/True)") + ylab("Final grade")
+
+# There is a small difference between the high and low users. Unsurpricingly high users of alcohol have worse grades on average than low users. There is large overlap though between the groups.

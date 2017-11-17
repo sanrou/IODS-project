@@ -12,19 +12,5 @@ output:
     code_folding: show
 ---
 
-***
-  
-```{r child = "chapter1.Rmd"}
-```
-  
-***
-  
-```{r child = "chapter2.Rmd"}
-```
+# Chapter 3. Logistic regression
 
-***
-
-```{r child = "chapter3.Rmd"}
-```
-
-***
