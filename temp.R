@@ -2,7 +2,8 @@
 
 # Load required libraries
 library(ggplot2)
-
+library(dplyr)
+library(boot)
 
 # Load data from .csv
 alc <- read.csv("data/student-alc.csv")
@@ -61,4 +62,93 @@ g3 + geom_bar() + facet_wrap("famrel") + ggtitle("Students divided by family rel
 g4 <- ggplot(alc, aes(x = high_use, y = G3))
 g4 + geom_boxplot() + ggtitle("Students' final grades grouped by alcohol use") + xlab("High alcohol use (False/True)") + ylab("Final grade")
 
-# There is a small difference between the high and low users. Unsurpricingly high users of alcohol have worse grades on average than low users. There is large overlap though between the groups.
+# There is a small difference between the high and low users. High users of alcohol have worse grades on average than low users. There is large overlap between the groups though.
+
+
+
+
+## Doing the logistic regression model.
+lrModel <- glm(high_use ~ activities + higher + famrel + G3, data = alc, family = "binomial")
+
+summary(lrModel)
+# The model has only two variables that seem worthwhile: family relationships and the final grade. Activities and higher education aspirations have a low chance of being significant in predicting high alcohol use. Having good family relationship and good final grade predicts lower alcohol use in the model.
+
+# Compute odds ratios and confidence intervals from the model's coefficients
+oddsR <- coef(lrModel) %>% exp
+confI <- confint(lrModel) %>% exp
+
+# Print odds ratios and confidence intervals. The confidence intervals of activities, higher education aspirations, and final grades span 1, meaning that there might be no predictive value with those variables. The family relations almost get to 1 also. 
+cbind(oddsR, confI)
+
+# The hypotheses for family relationships and final gradesh still hold, but rather tenuously if one considers the confidence intervals. Final grades have odds ratio of 1:1.07 so while it might be marginally significant it is of little practical value. I'd say only the family relationships variable has any value.
+
+
+
+## Explore the predictive power of the model with the significant variables. I'm including only the family relationships as the final grades had only a marginally significant probability of having a significant parameter in  the model, and also spanning 1 in it's confidence interval.
+# Refit the model with only family relationships
+strippedModel <- glm(high_use ~ famrel, data = alc, family = "binomial")
+
+# Predict the high use of alcohol using the stripped down model and the original (for interests sake).
+predHighStripped <- predict(strippedModel, type = "response")
+predHighAll <- predict(lrModel, type = "response")
+
+# Add the probabilities to data structure alc
+alc <- mutate(alc, probStripped = predHighStripped)
+alc <- mutate(alc, probAll = predHighAll)
+
+# Make predictions of high use
+alc <- mutate(alc, predStripped = probStripped > 0.5)
+alc <- mutate(alc, predAll = probAll > 0.5)
+
+# Check that code was fine. Look at the first twenty values
+select(alc, famrel, high_use, probStripped, predStripped, probAll, predAll) %>% head(20)
+
+table(high_use = alc$high_use, prediction = alc$predStripped)
+# Hmm. There seems to be no high users predicted by the stripped down model. Count n of TRUE values in predStripped to make sure.
+sum(alc$predStripped)
+
+# No True values... Let's see then how the full model would fare.
+table(high_use = alc$high_use, prediction = alc$predAll)
+
+# Better, but not great. The specificity of the model with all variables is terrible (2/114), and the sensitivity is bad (2/12). 
+
+# Lets compute the the total proportion of inaccurately classified individuals for hoots and giggles. Using the full model as the stripped version would be a bit boring to test.
+nIndividuals <- nrow(alc)
+nIncorrectPrediction <- sum(alc$high_use != alc$predAll)
+nIncorrectPrediction/nIndividuals
+
+# The proportion of inaccurate predictions were 32 % (122 out of 382). This gives an inflated view of how good the model is, as this mostly is due to the model having very few predictions for high usage.
+
+# Let's compare the model to a simple strategy of if family relationship is 2 or less, then predict high alcohol use.
+alc$simpleClassify <- alc$famrel <= 2
+table(high_use = alc$high_use, prediction = alc$simpleClassify)
+
+nIncorrectPrediction <- sum(alc$high_use != alc$simpleClassify)
+nIncorrectPrediction/nIndividuals
+
+# The proportion of inaccurate predictions were 31 % (119 out of 382). The simple model was better than the full model, but not by much. The sensitivity increased to almost 50 % though which is much better than the full model. Less than 50 % chance is still not impressive though.
+
+
+
+## Perform a 10-fold cross-validation of the full model. One needs to define a loss function for the cross-validation code (cv.glm).
+# Define loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# compute the average number of wrong predictions in the (training) data
+loss_func(class = alc$high_use, prob = alc$predAll)
+
+# 10-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = lrModel, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+
+# My full model has worse performance than the model in DataCamp, that is 0.32 vs 0.26, lower values being better. 
+
+
+# Working directory to source file location
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #works in Rstudio only

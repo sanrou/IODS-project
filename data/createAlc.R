@@ -2,6 +2,9 @@
 # Santeri Rouhinen, 2017.11.17
 # Reference link: https://archive.ics.uci.edu/ml/datasets/Student+Performance
 
+# Set working directory. This script is assumed to be in data folder with the student-mat.csv and student-por.csv files. 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # works in Rstudio only. This should be data path.
+setwd('..')
 
 ## Load csvs to data structures
 mat <- read.csv("data/student-mat.csv", sep = ";", header = TRUE)
