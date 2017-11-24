@@ -1,154 +1,209 @@
-# Temp to be moved to chapter3.Rmd.
+# Temp to be moved to chapter4.Rmd.
 
 # Load required libraries
 library(ggplot2)
 library(dplyr)
-library(boot)
+library(corrplot)
+library(GGally)
 
-# Load data from .csv
-alc <- read.csv("data/student-alc.csv")
+## 2. Load Boston data from MASS package
+library(MASS)
+data('Boston')
 
-# Description of the data from the authors (truncated):
-# This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). In [Cortez and Silva, 2008], the two datasets were modeled under binary/five-level classification and regression tasks. G3 is the final year grade (issued at the 3rd period), while G1 and G2 correspond to the 1st and 2nd period grades. 
+str(Boston)
+dim(Boston)
 
-# Link to the data and fuller description: https://archive.ics.uci.edu/ml/datasets/Student+Performance
-
-# Column names
-colnames(alc)
-
-
-## Choose four interesting variables and present hypothesis about their relationship with alcohol consumption. I did not select DataCamp ones as the results are known already, except the final grade as that is an obvious one. 
-# 19 activities - extra-curricular activities (binary: yes or no) 
-# 21 higher - wants to take higher education (binary: yes or no) 
-# 24 famrel - quality of family relationships (numeric: from 1 - very bad to 5 - excellent) 
-# 32 - final grade (numeric: from 0 to 20, output target) 
-
-# 19. I would imagine that activities predicts low alcohol use. Might not, as for example hockey youths in Finland consume a lot of alcohol. Interesting to see if there is any relation to high use. I would guess a marginally significant relation.
-# 21. Those with ambition should have less alcohol use if they are serious. Wanting to take higher education though is easy. Again, interesting to see any relation to high use. I would guess a low but still significant relation.
-# 24. Having poor family relationship I would imagine predicts high alcohol use. I would guess this to have the strongest relation to high alcohol use of my variable selections. 
-# 32. Final grade should have some predictive value, but not very strong. At least as far as I can remember from the DataCamp exercise. This selection is a bit boring.
+# Boston data has 506 observations and 14 variables. It has information about housing in suburbs of Boston.
+summary(Boston)
 
 
-## Do some exploratory search with the chosen variables and alcohol use. 
-# Draw a bar plot of high_use by activities. Gives graphs divided by activities.
-g1 <- ggplot(alc, aes(x = high_use))
-g1 + geom_bar() + facet_wrap("activities") + ggtitle("Students divided by extra activities (no/yes) to high users (F/T)") + xlab("High alcohol use (False/True)")
+## 3. Graphical overview of the data.
 
-# 19 activities. Looks like there is a small effect of students having extra activities having less heavy alcohol users. The difference between active students and non-activity students is not large.
+pairs(Boston)
 
+# Histograms of the variables
+Boston %>% 
+  gather(key=var_name, value = value) %>% 
+  ggplot(aes(x=value)) +
+  geom_histogram() +
+  facet_wrap(~var_name, scales = "free_x")
 
-# Draw a bar plot of high education aspirations and high alcohol use.
-g2 <- ggplot(alc, aes(x = high_use))
-g2 + geom_bar() + facet_wrap("higher") + ggtitle("Students divided by wanting to take higher education (no/yes) to high users (F/T)") + xlab("High alcohol use (False/True)")
+# print the correlation matrix
+cor_matrix<-cor(Boston) 
+cor_matrix %>% round(digits = 2)
 
+# Create color ramp from dark blue to white to red.
+colorVector <- c("blue", "white", "red")
 
-# 21. Education. There are very few people not wanting to take higher education, so this variable should be very pointless in future analyses.
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6, col = colorRampPalette(colorVector)(200))
 
-alc %>% group_by(higher, high_use) %>% summarise(count = n())
-
-# There are only 18 out of the 382 that are not interested in higher education. A bit surprising. High use was 1:1 in those not wanting to take higher education so at least my hypothesis holds, kind of. The n is so small one should not make statistical inferences. The ratio amongst those wanting to take higher education is about 1:3.5, much less than 1:1.
-
-
-# 24. Family relationship. 
-# Do a histogram of relationship levels by high alcohol use.
-g3 <- ggplot(alc, aes(x = high_use))
-g3 + geom_bar() + facet_wrap("famrel") + ggtitle("Students divided by family relationships (1-5) to high users (F/T)") + xlab("High alcohol use (False/True)")
-
-# There seems to be more high alcohol users in those reporting poor family relationships. Fortunately those reporting very low relationships are a minority. Hypothesis stands strong.
-
-
-# 32. Final grade.
-# Do boxplots of high and low alcohol users and their final grades (G3).
-g4 <- ggplot(alc, aes(x = high_use, y = G3))
-g4 + geom_boxplot() + ggtitle("Students' final grades grouped by alcohol use") + xlab("High alcohol use (False/True)") + ylab("Final grade")
-
-# There is a small difference between the high and low users. High users of alcohol have worse grades on average than low users. There is large overlap between the groups though.
+# The pairs plot shows that much of the data does not look like gaussian normally distributed data. The correlation plot shows that there are many high positive correlations between different variables: like industy and NO2 gas level and tax revenue; property taxes and access to radial highways. There are some strong negative correlations ones also like median value of owner-occupied homes and lower status of the population; and between distances to five Boston employment centres and proportion of owner-occupied units built prior to 1940.
 
 
 
+## 4. Standardize the dataset. Create crime rate categorical variable. Split data into training and data parts.
+# center and standardize variables
+boston_scaled <- scale(Boston)
 
-## Doing the logistic regression model.
-lrModel <- glm(high_use ~ activities + higher + famrel + G3, data = alc, family = "binomial")
+# summaries of the scaled variables
+summary(boston_scaled)
 
-summary(lrModel)
-# The model has only two variables that seem worthwhile: family relationships and the final grade. Activities and higher education aspirations have a low chance of being significant in predicting high alcohol use. Having good family relationship and good final grade predicts lower alcohol use in the model.
+# change the object to data frame from matrix type.
+boston_scaled <- as.data.frame(boston_scaled)
 
-# Compute odds ratios and confidence intervals from the model's coefficients
-oddsR <- coef(lrModel) %>% exp
-confI <- confint(lrModel) %>% exp
-
-# Print odds ratios and confidence intervals. The confidence intervals of activities, higher education aspirations, and final grades span 1, meaning that there might be no predictive value with those variables. The family relations almost get to 1 also. 
-cbind(oddsR, confI)
-
-# The hypotheses for family relationships and final gradesh still hold, but rather tenuously if one considers the confidence intervals. Final grades have odds ratio of 1:1.07 so while it might be marginally significant it is of little practical value. I'd say only the family relationships variable has any value.
+sd(boston_scaled$crim)
+# Now all the variables have zero mean and SD of 1. This is recommended for clustering. 
 
 
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
 
-## Explore the predictive power of the model with the significant variables. I'm including only the family relationships as the final grades had only a marginally significant probability of having a significant parameter in  the model, and also spanning 1 in it's confidence interval.
-# Refit the model with only family relationships
-strippedModel <- glm(high_use ~ famrel, data = alc, family = "binomial")
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
 
-# Predict the high use of alcohol using the stripped down model and the original (for interests sake).
-predHighStripped <- predict(strippedModel, type = "response")
-predHighAll <- predict(lrModel, type = "response")
+# look at the table of the new factor crime. The bins have either 127 or 126 elements.
+table(crime)
 
-# Add the probabilities to data structure alc
-alc <- mutate(alc, probStripped = predHighStripped)
-alc <- mutate(alc, probAll = predHighAll)
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
 
-# Make predictions of high use
-alc <- mutate(alc, predStripped = probStripped > 0.5)
-alc <- mutate(alc, predAll = probAll > 0.5)
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
 
-# Check that code was fine. Look at the first twenty values
-select(alc, famrel, high_use, probStripped, predStripped, probAll, predAll) %>% head(20)
 
-table(high_use = alc$high_use, prediction = alc$predStripped)
-# Hmm. There seems to be no high users predicted by the stripped down model. Count n of TRUE values in predStripped to make sure.
-sum(alc$predStripped)
+# Select 80 % of the data and 20 % of the data and split them into separate datasets.
+# number of rows in the Boston dataset 
+n <- nrow(Boston)
 
-# No True values... Let's see then how the full model would fare.
-table(high_use = alc$high_use, prediction = alc$predAll)
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
 
-# Better, but not great. The specificity of the model with all variables is terrible (2/114), and the sensitivity is bad (2/12). 
+# create training set
+train <- boston_scaled[ind,]
 
-# Lets compute the the total proportion of inaccurately classified individuals for hoots and giggles. Using the full model as the stripped version would be a bit boring to test.
-nIndividuals <- nrow(alc)
-nIncorrectPrediction <- sum(alc$high_use != alc$predAll)
-nIncorrectPrediction/nIndividuals
+# create test set 
+test <- boston_scaled[-ind,]
 
-# The proportion of inaccurate predictions were 32 % (122 out of 382). This gives an inflated view of how good the model is, as this mostly is due to the model having very few predictions for high usage.
+# save the correct classes from test data
+correct_classes <- test$crime
 
-# Let's compare the model to a simple strategy of if family relationship is 2 or less, then predict high alcohol use.
-alc$simpleClassify <- alc$famrel <= 2
-table(high_use = alc$high_use, prediction = alc$simpleClassify)
-
-nIncorrectPrediction <- sum(alc$high_use != alc$simpleClassify)
-nIncorrectPrediction/nIndividuals
-
-# The proportion of inaccurate predictions were 31 % (119 out of 382). The simple model was better than the full model, but not by much. The sensitivity increased to almost 50 % though which is much better than the full model. Less than 50 % chance is still not impressive though.
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
 
 
 
-## Perform a 10-fold cross-validation of the full model. One needs to define a loss function for the cross-validation code (cv.glm).
-# Define loss function (average prediction error)
-loss_func <- function(class, prob) {
-  n_wrong <- abs(class - prob) > 0.5
-  mean(n_wrong)
+## 5. Fit linear discriminant analysis on the training set.
+
+# linear discriminant analysis. The . means all of the variables.
+lda.fit <- lda(crime ~ ., data = train)
+
+# print the lda.fit object. Note that the first linear discriminant explains 95 % of the model, and the third one only 1.2 %.
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
 }
 
-# compute the average number of wrong predictions in the (training) data
-loss_func(class = alc$high_use, prob = alc$predAll)
+# target classes as numeric
+classes <- as.numeric(train$crime)
 
-# 10-fold cross-validation
-library(boot)
-cv <- cv.glm(data = alc, cost = loss_func, glmfit = lrModel, K = 10)
-
-# average number of wrong predictions in the cross validation
-cv$delta[1]
-
-# My full model has worse performance than the model in DataCamp, that is 0.32 vs 0.26, lower values being better. 
+# plot the lda results. Both lines need to be run at the same time. High class of crime rate looks to cluster pretty well with only a few medium high class elements in it, and only one high class element being at LD1 value of ~0.
+plot(lda.fit, col = classes, pch = classes, dimen = 2)
+lda.arrows(lda.fit, myscale = 1)
 
 
-# Working directory to source file location
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #works in Rstudio only
+
+
+## 6. Predict the classes with the LDA model.
+
+# Saving of the crime variable in a vector was done in step 5. Remove the crime variable from test data not necessary either.
+# test <- dplyr::select(test, -crime)
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+
+# The categorization of the low and especially high classes of properties was quite successful. The medium low and medium high classes were only about 60 % correct. There was more confusion about the low crime rate properties compared to the high crime rating properties. Having shifting values depending on different runs of the script is annoing.
+
+
+## 7. Start again with the Boston dataset. Test what number of clusters to run K-means clustering with would make sense.
+
+# Reload Boston dataset.
+data("Boston")
+
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame from matrix type.
+boston_scaled <- as.data.frame(boston_scaled)
+
+# Calculate the Euclidean distances between observations.
+dist_eu <- dist(boston_scaled)
+
+# look at the summary of the distances
+summary(dist_eu)
+
+
+# K-means clustering
+km <-kmeans(boston_scaled, centers = 3)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+
+# Determening how many clusters to have using within cluster sum of squares (WCSS). Set a seed to make iterations give the same result.
+set.seed(123)
+
+# determine the number of clusters using the total within sum of squares (twcss)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
+
+# visualize the results. Two or 3 seems reasonable. For visualization purposes 2 is handier so lets go with that.
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 2)
+
+# plot the normalized Boston dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+
+# Tried to use ggpairs but that didn't manage to color with the clusters. One does get the correlation values with ggpairs though.
+ggpairs(boston_scaled)
+
+# Per capita crime rate by town (crime) is correlated most strongly with accessibility to radial highways (rad, 0.63), full-value property-tax rate (tax, 0.58), and lower status of the population (lstat, 0.46). Rad and tax are very highly correlated (0.91), and rad and tax are both correlated somewhat strongly with lstat (~.45). Since the rad and tax are so highly correlated it is hard to disentangle what encourages crime in the area, good connections or wealth as measured by taxes. I would have imagined that lower status would have been negatively correlated with tax. The tax value is likely not a good indicator of the wealth in the area. I find it a bit hard to guess at what these correlations mean. One interesting value is that having higher proportion of blacks by town has a weak negative correlation with per capita crime rate.
+
+
+
+
+## Super bonus, 3D plots.
+
+model_predictors <- dplyr::select(train, -crime)
+# check the dimensions
+dim(model_predictors)
+dim(lda.fit$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+
+library(plotly)
+
+# Plot with crime classes as color of the training data.
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = train$crime)
+
+# Plot with clusters of k-means as color of the training data. 
+# First one needs to do k-means with 4 clusters to compare the methods.
+km3D <-kmeans(boston_scaled, centers = 4)
+
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = km3D$cluster[ind])
+
+# Comparison of the methods using eye-balling: the high crime rate cluster and third cluster of k-means are rather similar. The k-means clustering seems to work better as far as visuals go: less intermingling. The crime classes are more intermingled even to the point where low and medium high crime rate classes are interspersed. Cluster 1 and low somewhat match, but cluster 2 and 4 and medium high and medium low clusters do not match well.
+
