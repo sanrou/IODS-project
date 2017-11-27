@@ -52,7 +52,7 @@ Description of variables in the Boston dataset:
 
 ## 2. Load Boston data from MASS package
 
-```{r hideLibraryOutput, warning=FALSE, message=FALSE}
+```{r hideLibraryOutput2, warning=FALSE, message=FALSE}
 # Load required libraries
 library(ggplot2)
 library(dplyr)
@@ -82,7 +82,7 @@ summary(Boston)
 
 ## 3. Graphical overview of the data.
 
-```{r biggerFigures, fig.height=9, fig.width=9}
+```{r biggerFigures4, fig.height=9, fig.width=9}
 
 pairs(Boston)
 
@@ -170,7 +170,7 @@ test <- dplyr::select(test, -crime)
 
 ## 5. Fit linear discriminant analysis on the training set.
 
-```{r biggerFigures2, fig.height=8, fig.width=8}
+```{r biggerFigures42, fig.height=8, fig.width=8}
 
 # linear discriminant analysis. The . means all of the variables.
 lda.fit <- lda(crime ~ ., data = train)
