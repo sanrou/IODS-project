@@ -75,8 +75,6 @@ alc$high_use <- alc$alc_use > 2
 # There are 382 observations and 35 variables as there should be.
 glimpse(alc)
 
-
-
-## Save data to .csv file
+# Save data to .csv file
 write.csv(alc, file = "data/student-alc.csv")
 
