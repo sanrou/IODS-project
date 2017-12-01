@@ -9,3 +9,8 @@ Introduction to Open Data Science is a course held in 2017 for the second time. 
 
 ## Personal github repository link to the IODS-project
 [link](https://github.com/sanrou/IODS-project)
+
+## Link to the exercises
+[link](https://sanrou.github.io/IODS-project/)
+
+
