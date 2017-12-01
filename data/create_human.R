@@ -26,7 +26,7 @@ all.equal(hd$Country, gii$Country)
 
 newHdNames <- c("hdiRank", "country", "hdiIndex", "lifeExpect", "educExpect", "educYears", "grossIncome", "gniMinusHdi")
 
-newGiiNames <- c("giiRank", "country", "giiIndex", "motherMortality", "birthsRate", "womenParliament", "femaleEducated", "maleEducated", "femaleLabour", "maleLabour")
+newGiiNames <- c("giiRank", "country", "giiIndex", "motherMortality", "adolBirthsR", "womenParliament", "femaleEducated", "maleEducated", "femaleLabour", "maleLabour")
 
 names(hd)  <- newHdNames
 names(gii) <- newGiiNames
