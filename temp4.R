@@ -5,6 +5,7 @@ library(ggplot2)
 library(dplyr)
 library(corrplot)
 library(GGally)
+library(tidyr)
 
 ## 2. Load Boston data from MASS package
 library(MASS)
